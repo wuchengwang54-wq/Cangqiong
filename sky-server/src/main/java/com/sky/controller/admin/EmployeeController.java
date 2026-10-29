@@ -95,4 +95,12 @@ public class EmployeeController {
         return Result.success(pageResult);
     }
 
+    @PostMapping("/status/{status}")
+    @ApiOperation("启用禁用员工账号")
+    public Result startOrStop(@PathVariable("status") Integer status, Long id){
+        log.info("启用禁用员工账:{}, {}", status, id);
+        employeeService.statrOrStop(status, id);
+        return Result.success();
+    }
+
 }
