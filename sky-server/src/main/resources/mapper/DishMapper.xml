@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sky.mapper.DishMapper">
+
+    <!--
+        新增菜品
+        useGeneratedKeys + keyProperty：把数据库自增主键回填到 dish.id，
+        后面保存口味（dish_flavor.dish_id）时要用到
+    -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into dish (name, category_id, price, image, description, status,
+                          create_time, update_time, create_user, update_user)
+        values (#{name}, #{categoryId}, #{price}, #{image}, #{description}, #{status},
+                #{createTime}, #{updateTime}, #{createUser}, #{updateUser})
+    </insert>
+
+</mapper>
