@@ -15,4 +15,81 @@
                 #{createTime}, #{updateTime}, #{createUser}, #{updateUser})
     </insert>
 
+    <!--
+        根据 id 动态修改菜品
+        1. <set> 会自动去掉最后那个多余的逗号，并只在有内容时输出 SET
+        2. <if> 实现“传了才更新”：字段为 null 时保持数据库原值
+        3. update_time / update_user 不用前端传，
+           由 AutoFill 切面在进入 mapper 之前通过反射填好
+    -->
+    <update id="update">
+        update dish
+        <set>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="categoryId != null">
+                category_id = #{categoryId},
+            </if>
+            <if test="price != null">
+                price = #{price},
+            </if>
+            <if test="image != null">
+                image = #{image},
+            </if>
+            <if test="description != null">
+                description = #{description},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime},
+            </if>
+            <if test="updateUser != null">
+                update_user = #{updateUser},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteByIds">
+        delete from dish where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!--
+        菜品分页查询
+        1. left join category 是为了带出前端列表要显示的 categoryName
+        2. 用 <where> + <if> 动态拼接条件，参数为空时不参与过滤
+        3. 分页由 PageHelper.startPage() 完成，这里不要写 limit
+    -->
+    <select id="pageQuery" resultType="com.sky.vo.DishVO">
+        select d.id,
+               d.name,
+               d.category_id,
+               d.price,
+               d.image,
+               d.description,
+               d.status,
+               d.update_time,
+               c.name as categoryName
+        from dish d
+                 left join category c on d.category_id = c.id
+        <where>
+            <if test="name != null and name != ''">
+                and d.name like concat('%', #{name}, '%')
+            </if>
+            <if test="categoryId != null">
+                and d.category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                and d.status = #{status}
+            </if>
+        </where>
+        order by d.update_time desc
+    </select>
+
 </mapper>
