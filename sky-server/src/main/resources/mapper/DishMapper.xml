@@ -92,4 +92,27 @@
         order by d.update_time desc
     </select>
 
+    <!--
+        条件查询菜品
+        1. <where> + <if> 动态拼接条件，参数为空时不参与过滤
+        2. 用户端查询时会传入 categoryId 和 status=1（起售中），
+           管理端也可按 name 模糊查询
+    -->
+    <select id="list" resultType="com.sky.entity.Dish">
+        select *
+        from dish
+        <where>
+            <if test="name != null and name != ''">
+                and name like concat('%', #{name}, '%')
+            </if>
+            <if test="categoryId != null">
+                and category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+
 </mapper>

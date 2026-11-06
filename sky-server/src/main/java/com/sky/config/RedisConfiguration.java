@@ -17,15 +17,14 @@ public class RedisConfiguration {
         RedisTemplate redisTemplate = new RedisTemplate();
         //设置redis的连接工厂对象
         redisTemplate.setConnectionFactory(redisConnectionFactory);
-        //统一使用字符串序列化器，key和value在redis中都以明文形式存储
+        //统一使用字符串序列化器，key在redis中以明文形式存储
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
         //设置redis key的序列化器
         redisTemplate.setKeySerializer(stringRedisSerializer);
-        //设置redis value的序列化器
-        redisTemplate.setValueSerializer(stringRedisSerializer);
-        //设置hash类型key和value的序列化器
+        //设置hash类型key的序列化器
         redisTemplate.setHashKeySerializer(stringRedisSerializer);
-        redisTemplate.setHashValueSerializer(stringRedisSerializer);
+        //value不设置，使用默认的JdkSerializationRedisSerializer
+        //（缓存的对象需要实现Serializable，List<DishVO>可以正常序列化）
         return redisTemplate;
     }
 }
