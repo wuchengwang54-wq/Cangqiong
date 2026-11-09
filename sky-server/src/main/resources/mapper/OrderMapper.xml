@@ -197,4 +197,35 @@
         where id = #{id}
     </update>
 
+    <!--
+        订单分页条件查询（用户端历史订单、商家端订单搜索共用）
+        1. 用 <where> + <if> 动态拼接条件，参数为空时不参与过滤
+        2. 分页由 PageHelper.startPage() 完成，这里不要写 limit
+        3. 按订单下单时间倒序
+    -->
+    <select id="pageQuery" resultType="com.sky.entity.Orders">
+        select * from orders
+        <where>
+            <if test="number != null and number != ''">
+                and number like concat('%', #{number}, '%')
+            </if>
+            <if test="phone != null and phone != ''">
+                and phone like concat('%', #{phone}, '%')
+            </if>
+            <if test="userId != null">
+                and user_id = #{userId}
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+            <if test="beginTime != null">
+                and order_time &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null">
+                and order_time &lt;= #{endTime}
+            </if>
+        </where>
+        order by order_time desc
+    </select>
+
 </mapper>
