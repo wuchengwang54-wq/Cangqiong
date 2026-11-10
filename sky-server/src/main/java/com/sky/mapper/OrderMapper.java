@@ -9,9 +9,12 @@ import org.apache.ibatis.annotations.Select;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface OrderMapper {
+    // begin 包含，endExclusive 不包含，status 可选
+    Integer countByMap(Map<String, Object> map);
 
     //插入数据
     public void insert(Orders orders);
@@ -44,4 +47,9 @@ public interface OrderMapper {
      */
     @Select("select count(id) from orders where status = #{status}")
     Integer countStatus(Integer status);
+
+    /*
+    根据动态条件统计营业额数据
+     */
+    Double sumByMap(Map map);
 }
