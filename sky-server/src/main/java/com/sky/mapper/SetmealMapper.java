@@ -12,9 +12,13 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface SetmealMapper {
+
+    // 根据状态、分类统计数量
+    Integer countByMap(Map<String, Object> map);
 
     /**
      * 根据分类id查询套餐的数量
