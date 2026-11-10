@@ -1,6 +1,8 @@
 package com.sky.service.impl;
 
 import com.sky.entity.Orders;
+import com.sky.dto.GoodsSalesDTO;
+import com.sky.vo.SalesTop10ReportVO;
 import com.sky.exception.BaseException;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.UserMapper;
@@ -29,6 +31,28 @@ public class ReportServiceImpl implements ReportService {
     private OrderMapper orderMapper;
     @Autowired
     private UserMapper userMapper;
+
+    @Override
+    public SalesTop10ReportVO getSalesTop10(LocalDate begin, LocalDate end) {
+        if (begin == null || end == null) {
+            throw new BaseException("开始日期和结束日期不能为空");
+        }
+        if (begin.isAfter(end)) {
+            throw new BaseException("开始日期不能晚于结束日期");
+        }
+        List<GoodsSalesDTO> sales = orderMapper.getSalesTop10(
+                begin.atStartOfDay(), end.plusDays(1).atStartOfDay(), Orders.COMPLETED);
+        List<String> names = new ArrayList<>();
+        List<Integer> numbers = new ArrayList<>();
+        for (GoodsSalesDTO item : sales) {
+            names.add(item.getName());
+            numbers.add(item.getNumber());
+        }
+        return SalesTop10ReportVO.builder()
+                .nameList(StringUtils.join(names, ","))
+                .numberList(StringUtils.join(numbers, ","))
+                .build();
+    }
 
     @Override
     public OrderReportVO getOrdersStatistics(LocalDate begin, LocalDate end) {

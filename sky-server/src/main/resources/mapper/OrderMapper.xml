@@ -3,6 +3,20 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.sky.mapper.OrderMapper">
 
+    <!-- 按菜品 ID 合并不同口味，使用下单时的名称，不依赖菜品当前是否已删除。 -->
+    <select id="getSalesTop10" resultType="com.sky.dto.GoodsSalesDTO">
+        select max(od.name) as name, sum(od.number) as number
+        from order_detail od
+        inner join orders o on od.order_id = o.id
+        where o.status = #{status}
+          and o.order_time &gt;= #{begin}
+          and o.order_time &lt; #{endExclusive}
+          and od.dish_id is not null
+        group by od.dish_id
+        order by number desc, od.dish_id asc
+        limit 10
+    </select>
+
     <!--
         新增订单
         1. useGeneratedKeys + keyProperty：把数据库自增主键回填到 orders.id，

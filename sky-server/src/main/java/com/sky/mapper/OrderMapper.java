@@ -2,6 +2,7 @@ package com.sky.mapper;
 
 import com.github.pagehelper.Page;
 import com.sky.dto.OrdersPageQueryDTO;
+import com.sky.dto.GoodsSalesDTO;
 import com.sky.entity.Orders;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -13,6 +14,11 @@ import java.util.Map;
 
 @Mapper
 public interface OrderMapper {
+    //统计指定时间区间内的销量排名前10
+    List<GoodsSalesDTO> getSalesTop10(@Param("begin") LocalDateTime begin,
+                                     @Param("endExclusive") LocalDateTime endExclusive,
+                                     @Param("status") Integer status);
+
     // begin 包含，endExclusive 不包含，status 可选
     Integer countByMap(Map<String, Object> map);
 

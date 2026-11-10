@@ -1,6 +1,7 @@
 package com.sky.controller.admin;
 
 import com.sky.result.Result;
+import com.sky.vo.SalesTop10ReportVO;
 import com.sky.service.ReportService;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
@@ -28,6 +29,14 @@ public class ReportController {
 
     @Autowired
     private ReportService reportService;
+
+    @GetMapping("/top10")
+    @ApiOperation("菜品销量前十")
+    public Result<SalesTop10ReportVO> top10(
+            @RequestParam("begin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate begin,
+            @RequestParam("end") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        return Result.success(reportService.getSalesTop10(begin, end));
+    }
 
     @GetMapping("/ordersStatistics")
     @ApiOperation("订单统计")
