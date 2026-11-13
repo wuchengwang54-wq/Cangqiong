@@ -32,11 +32,25 @@ public class ShoppingCartController {
         return Result.success();
     }
 
+    @PostMapping("/sub")
+    @ApiOperation("购物车商品数量减一，数量为零时删除")
+    public Result sub(@RequestBody ShoppingCartDTO shoppingCartDTO) {
+        shoppingCartService.subShoppingCart(shoppingCartDTO);
+        return Result.success();
+    }
+
     //查询购物车数据
     @GetMapping("/list")
     public Result<List<ShoppingCart>> list(){
         List<ShoppingCart> list = shoppingCartService.showShoppingCart();
         return Result.success(list);
+    }
+
+    //清空购物车数据
+    @DeleteMapping("/delete")
+    @ApiOperation("删除选中的购物车条目（包含该条目的全部数量）")
+    public Result<Integer> delete(@RequestParam List<Long> ids) {
+        return Result.success(shoppingCartService.deleteShoppingCartItems(ids));
     }
 
     //清空购物车数据

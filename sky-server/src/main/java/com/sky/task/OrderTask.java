@@ -1,5 +1,6 @@
 package com.sky.task;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.sky.entity.Orders;
 import com.sky.mapper.OrderMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -17,35 +18,46 @@ public class OrderTask {
 
     @Autowired
     private OrderMapper orderMapper;
+
     //处理超时订单
     @Scheduled(cron = "0 * * * * ?")
-    public void processTimeoutOrder(){
+    public void processTimeoutOrder() {
         log.info("定时处理超时订单：{}", LocalDateTime.now());
         LocalDateTime time = LocalDateTime.now().plusMinutes(-15);
-        List<Orders> orderslist = orderMapper.getByStatusAndOrderTimeLT(Orders.PENDING_PAYMENT, time);
+        List<Orders> orderslist = orderMapper.selectList(Wrappers.<Orders>lambdaQuery()
+                .eq(Orders::getStatus, Orders.PENDING_PAYMENT)
+                .lt(Orders::getOrderTime, time));
         //查询超时订单
-        if(orderslist != null && orderslist.size()>0){
-            for(Orders orders : orderslist){
-                orders.setStatus(Orders.CANCELLED);
-                orders.setCancelReason("订单超时，自动取消");
-                orders.setCancelTime(LocalDateTime.now());
-                orderMapper.update(orders);
+        if (orderslist != null && !orderslist.isEmpty()) {
+            for (Orders orders : orderslist) {
+                Orders update = Orders.builder()
+                        .id(orders.getId())
+                        .status(Orders.CANCELLED)
+                        .cancelReason("订单超时，自动取消")
+                        .cancelTime(LocalDateTime.now())
+                        .build();
+                orderMapper.updateById(update);
             }
         }
     }
 
     //处理一直处于派送中状态的订单
     @Scheduled(cron = "0 0 1 * * ?")   // 每天凌晨 1:00:00 触发
-    public void processDeliveryOrder(){
+    public void processDeliveryOrder() {
         log.info("定时处理处于派送中的订单：{}", LocalDateTime.now());
         LocalDateTime time = LocalDateTime.now().plusMinutes(-60);
 
         //查询派送中超时订单
-        List<Orders> orderslist = orderMapper.getByStatusAndOrderTimeLT(Orders.DELIVERY_IN_PROGRESS, time);
-        if(orderslist != null && orderslist.size()>0){
-            for(Orders orders : orderslist){
-                orders.setStatus(Orders.COMPLETED);
-                orderMapper.update(orders);
+        List<Orders> orderslist = orderMapper.selectList(Wrappers.<Orders>lambdaQuery()
+                .eq(Orders::getStatus, Orders.DELIVERY_IN_PROGRESS)
+                .lt(Orders::getOrderTime, time));
+        if (orderslist != null && !orderslist.isEmpty()) {
+            for (Orders orders : orderslist) {
+                Orders update = Orders.builder()
+                        .id(orders.getId())
+                        .status(Orders.COMPLETED)
+                        .build();
+                orderMapper.updateById(update);
             }
         }
     }

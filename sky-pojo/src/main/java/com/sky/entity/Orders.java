@@ -1,5 +1,8 @@
 package com.sky.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,6 +19,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@TableName("orders")
 public class Orders implements Serializable {
 
     /**
@@ -37,6 +41,7 @@ public class Orders implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     //订单号
@@ -100,10 +105,10 @@ public class Orders implements Serializable {
     private LocalDateTime deliveryTime;
 
     //打包费
-    private int packAmount;
+    private Integer packAmount;
 
     //餐具数量
-    private int tablewareNumber;
+    private Integer tablewareNumber;
 
     //餐具数量状态  1按餐量提供  0选择具体数量
     private Integer tablewareStatus;

@@ -1,5 +1,7 @@
 package com.sky.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.sky.context.BaseContext;
 import com.sky.entity.AddressBook;
 import com.sky.mapper.AddressBookMapper;
@@ -18,18 +20,17 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     /**
      * 条件查询
-     *
-     * @param addressBook
-     * @return
      */
     public List<AddressBook> list(AddressBook addressBook) {
-        return addressBookMapper.list(addressBook);
+        LambdaQueryWrapper<AddressBook> wrapper = Wrappers.<AddressBook>lambdaQuery()
+                .eq(addressBook.getUserId() != null, AddressBook::getUserId, addressBook.getUserId())
+                .eq(addressBook.getPhone() != null, AddressBook::getPhone, addressBook.getPhone())
+                .eq(addressBook.getIsDefault() != null, AddressBook::getIsDefault, addressBook.getIsDefault());
+        return addressBookMapper.selectList(wrapper);
     }
 
     /**
      * 新增地址
-     *
-     * @param addressBook
      */
     public void save(AddressBook addressBook) {
         addressBook.setUserId(BaseContext.getCurrentId());
@@ -39,45 +40,41 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     /**
      * 根据id查询
-     *
-     * @param id
-     * @return
      */
     public AddressBook getById(Long id) {
-        AddressBook addressBook = addressBookMapper.getById(id);
-        return addressBook;
+        return addressBookMapper.selectById(id);
     }
 
     /**
      * 根据id修改地址
-     *
-     * @param addressBook
      */
     public void update(AddressBook addressBook) {
-        addressBookMapper.update(addressBook);
+        // 不允许通过修改接口变更地址所属用户
+        addressBook.setUserId(null);
+        addressBookMapper.update(addressBook, Wrappers.<AddressBook>lambdaUpdate()
+                .eq(AddressBook::getId, addressBook.getId())
+                .eq(AddressBook::getUserId, BaseContext.getCurrentId()));
     }
 
     /**
      * 设置默认地址
-     *
-     * @param addressBook
      */
     @Transactional
     public void setDefault(AddressBook addressBook) {
-        //1、将当前用户的所有地址修改为非默认地址 update address_book set is_default = ? where user_id = ?
-        addressBook.setIsDefault(0);
-        addressBook.setUserId(BaseContext.getCurrentId());
-        addressBookMapper.updateIsDefaultByUserId(addressBook);
+        //1、将当前用户的所有地址修改为非默认地址
+        addressBookMapper.update(null, Wrappers.<AddressBook>lambdaUpdate()
+                .set(AddressBook::getIsDefault, 0)
+                .eq(AddressBook::getUserId, BaseContext.getCurrentId()));
 
-        //2、将当前地址改为默认地址 update address_book set is_default = ? where id = ?
-        addressBook.setIsDefault(1);
-        addressBookMapper.update(addressBook);
+        //2、将当前地址改为默认地址
+        addressBookMapper.update(null, Wrappers.<AddressBook>lambdaUpdate()
+                .set(AddressBook::getIsDefault, 1)
+                .eq(AddressBook::getId, addressBook.getId())
+                .eq(AddressBook::getUserId, BaseContext.getCurrentId()));
     }
 
     /**
      * 根据id删除地址
-     *
-     * @param id
      */
     public void deleteById(Long id) {
         addressBookMapper.deleteById(id);

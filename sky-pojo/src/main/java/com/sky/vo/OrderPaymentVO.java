@@ -14,6 +14,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class OrderPaymentVO implements Serializable {
 
+    @Builder.Default
+    private Boolean mock = false; // true 表示后端已完成模拟支付，前端无需调起微信支付
+
     private String nonceStr; //随机字符串
     private String paySign; //签名
     private String timeStamp; //时间戳

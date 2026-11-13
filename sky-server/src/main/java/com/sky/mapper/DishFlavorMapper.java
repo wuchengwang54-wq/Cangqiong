@@ -1,34 +1,24 @@
 package com.sky.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.sky.entity.DishFlavor;
-import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
 @Mapper
-public interface DishFlavorMapper {
+public interface DishFlavorMapper extends BaseMapper<DishFlavor> {
 
-    /*
-    批量插入口味数据
+    /**
+     * 批量插入口味数据
      */
-    void insertBatch(List<DishFlavor> flavors);
-
-    /*
-    删除口味表数据
-     */
-    @Delete("delete from dish_flavor where dish_id = #{dishId}")
-    void deleteByDishId(Long dishId);
-
-    /*
-    根据菜品id集合批量删除关联的口味数据
-     */
-    void deleteByIds(List<Long> dishIds);
-
-    /*
-    根据id查询口味数据
-     */
-    @Select("select * from dish_flavor where dish_id = #{dishId}")
-    List<DishFlavor> getByDishId(Long dishId);
+    @Insert({"<script>",
+            "insert into dish_flavor (dish_id, name, value) values",
+            "<foreach collection='flavors' item='df' separator=','>",
+            "  (#{df.dishId}, #{df.name}, #{df.value})",
+            "</foreach>",
+            "</script>"})
+    int insertBatch(@Param("flavors") List<DishFlavor> flavors);
 }

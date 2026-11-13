@@ -1,6 +1,8 @@
 package com.sky.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.sky.entity.Orders;
+import com.sky.entity.User;
 import com.sky.dto.GoodsSalesDTO;
 import com.sky.service.WorkspaceService;
 import com.sky.vo.*;
@@ -24,9 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -75,15 +75,18 @@ public class ReportServiceImpl implements ReportService {
         int total = 0;
         int completedTotal = 0;
         for (LocalDate date = begin; !date.isAfter(end); date = date.plusDays(1)) {
-            Map<String, Object> filters = new HashMap<>();
-            // 按下单时间归属日期，使用次日零点作为不包含的上界。
-            filters.put("begin", date.atStartOfDay());
-            filters.put("endExclusive", date.plusDays(1).atStartOfDay());
-            Integer count = orderMapper.countByMap(filters);
-            filters.put("status", Orders.COMPLETED);
-            Integer completed = orderMapper.countByMap(filters);
-            count = count == null ? 0 : count;
-            completed = completed == null ? 0 : completed;
+            LocalDateTime beginTime = date.atStartOfDay();
+            LocalDateTime endExclusive = date.plusDays(1).atStartOfDay();
+
+            // 按下单时间归属日期，使用次日零点作为不包含的上界
+            int count = toInt(orderMapper.selectCount(Wrappers.<Orders>lambdaQuery()
+                    .ge(Orders::getOrderTime, beginTime)
+                    .lt(Orders::getOrderTime, endExclusive)));
+            int completed = toInt(orderMapper.selectCount(Wrappers.<Orders>lambdaQuery()
+                    .ge(Orders::getOrderTime, beginTime)
+                    .lt(Orders::getOrderTime, endExclusive)
+                    .eq(Orders::getStatus, Orders.COMPLETED)));
+
             dates.add(date);
             counts.add(count);
             completedCounts.add(completed);
@@ -100,8 +103,8 @@ public class ReportServiceImpl implements ReportService {
                 .build();
     }
 
-    /*
-    统计指定时间区间内的营业额数据
+    /**
+     * 统计指定时间区间内的营业额数据
      */
     @Override
     public TurnoverReportVO getTurnoverStatistics(LocalDate begin, LocalDate end) {
@@ -115,7 +118,7 @@ public class ReportServiceImpl implements ReportService {
         List<LocalDate> dateList = new ArrayList<>();
 
         dateList.add(begin);
-        while(!begin.equals(end)){
+        while (!begin.equals(end)) {
             //日期计算，计算指定日期的后一天对应的日期
             begin = begin.plusDays(1);
             dateList.add(begin);
@@ -123,16 +126,14 @@ public class ReportServiceImpl implements ReportService {
 
         //存放每天的营业额
         List<Double> turnoverList = new ArrayList<>();
-        dateList.forEach(date->{
+        dateList.forEach(date -> {
             //查询date日期对应的营业额数据，营业额是指：状态为"已完成"的订单金额合计
             LocalDateTime beginTime = LocalDateTime.of(date, LocalTime.MIN);
             LocalDateTime endTime = LocalDateTime.of(date, LocalTime.MAX);
-            //select sum(amount) from orders where order_time > beginTime and order_time < endTime and status = 5
-            Map<String, Object> map = new HashMap<>();
-            map.put("begin",beginTime);
-            map.put("end", endTime);
-            map.put("status", Orders.COMPLETED);
-            Double turnover = orderMapper.sumByMap(map);
+            Double turnover = orderMapper.sumByWrapper(Wrappers.<Orders>lambdaQuery()
+                    .ge(Orders::getOrderTime, beginTime)
+                    .le(Orders::getOrderTime, endTime)
+                    .eq(Orders::getStatus, Orders.COMPLETED));
             turnoverList.add(turnover == null ? 0.0 : turnover);
         });
 
@@ -146,34 +147,39 @@ public class ReportServiceImpl implements ReportService {
     //统计指定时间区间内的用户数据
     @Override
     public UserReportVO getUserStatistics(LocalDate begin, LocalDate end) {
+        if (begin == null || end == null) {
+            throw new BaseException("开始日期和结束日期不能为空");
+        }
+        if (begin.isAfter(end)) {
+            throw new BaseException("开始日期不能晚于结束日期");
+        }
         //存放从begin到end之间每天对应的日期
         List<LocalDate> dateList = new ArrayList<>();
 
         dateList.add(begin);
-        while(!begin.equals(end)){
+        while (!begin.equals(end)) {
             begin = begin.plusDays(1);
             dateList.add(begin);
         }
-        //存放每天新增用户数量 select count(id) from user where create_time < ? and create_time > ?
+        //存放每天新增用户数量
         List<Integer> newUserList = new ArrayList<>();
-        //存放每天的总用户数量select count(id) from user where create_time < ?
+        //存放每天的总用户数量
         List<Integer> totalUserList = new ArrayList<>();
 
-        dateList.forEach(date->{
+        dateList.forEach(date -> {
             LocalDateTime beginTime = LocalDateTime.of(date, LocalTime.MIN);
             LocalDateTime endTime = LocalDateTime.of(date, LocalTime.MAX);
 
-            Map map = new HashMap<>();
-            map.put("end",endTime);
             //统计总的用户数量
-            Integer totalUser = userMapper.countByMap(map);
+            int totalUser = toInt(userMapper.selectCount(Wrappers.<User>lambdaQuery()
+                    .le(User::getCreateTime, endTime)));
             //统计新增的用户数量
-            map.put("begin",beginTime);
-            Integer newUser = userMapper.countByMap(map);
+            int newUser = toInt(userMapper.selectCount(Wrappers.<User>lambdaQuery()
+                    .ge(User::getCreateTime, beginTime)
+                    .le(User::getCreateTime, endTime)));
 
-            totalUserList.add(totalUser == null ? 0 : totalUser);
-            newUserList.add(newUser == null ? 0 : newUser);
-
+            totalUserList.add(totalUser);
+            newUserList.add(newUser);
         });
 
         return UserReportVO.builder()
@@ -240,5 +246,9 @@ public class ReportServiceImpl implements ReportService {
                 out.flush();
             }
         }
+    }
+
+    private int toInt(Long value) {
+        return value == null ? 0 : value.intValue();
     }
 }

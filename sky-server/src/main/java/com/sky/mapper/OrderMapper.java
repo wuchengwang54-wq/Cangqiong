@@ -1,7 +1,8 @@
 package com.sky.mapper;
 
-import com.github.pagehelper.Page;
-import com.sky.dto.OrdersPageQueryDTO;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.toolkit.Constants;
 import com.sky.dto.GoodsSalesDTO;
 import com.sky.entity.Orders;
 import org.apache.ibatis.annotations.Mapper;
@@ -10,52 +11,31 @@ import org.apache.ibatis.annotations.Select;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 @Mapper
-public interface OrderMapper {
-    //统计指定时间区间内的销量排名前10
+public interface OrderMapper extends BaseMapper<Orders> {
+
+    /**
+     * 统计指定时间区间内的销量排名前10
+     * 按菜品 ID 合并不同口味，使用下单时的名称，不依赖菜品当前是否已删除
+     */
+    @Select("select max(od.name) as name, sum(od.number) as number " +
+            "from order_detail od " +
+            "inner join orders o on od.order_id = o.id " +
+            "where o.status = #{status} " +
+            "  and o.order_time >= #{begin} " +
+            "  and o.order_time < #{endExclusive} " +
+            "  and od.dish_id is not null " +
+            "group by od.dish_id " +
+            "order by number desc, od.dish_id asc " +
+            "limit 10")
     List<GoodsSalesDTO> getSalesTop10(@Param("begin") LocalDateTime begin,
                                      @Param("endExclusive") LocalDateTime endExclusive,
                                      @Param("status") Integer status);
 
-    // begin 包含，endExclusive 不包含，status 可选
-    Integer countByMap(Map<String, Object> map);
-
-    //插入数据
-    public void insert(Orders orders);
-
-    //根据订单号查询订单
-    @Select("select * from orders where number = #{orderNumber}")
-    Orders getByNumber(String orderNumber);
-
-    //根据id查询订单
-    @Select("select * from orders where id = #{id}")
-    Orders getById(Long id);
-
-    //修改订单信息
-    void update(Orders orders);
-
-    //根据状态和时间来查询订单
-    @Select("select * from orders where status = #{status} and order_time < #{orderTime}")
-    List<Orders> getByStatusAndOrderTimeLT(@Param("status") Integer status,
-                                          @Param("orderTime") LocalDateTime orderTime);
-
     /**
-     * 分页条件查询并按下单时间排序
-     * @param ordersPageQueryDTO
+     * 动态条件统计订单金额，条件由 LambdaQueryWrapper 构造
      */
-    Page<Orders> pageQuery(OrdersPageQueryDTO ordersPageQueryDTO);
-
-    /**
-     * 根据状态统计订单数量
-     * @param status
-     */
-    @Select("select count(id) from orders where status = #{status}")
-    Integer countStatus(Integer status);
-
-    /*
-    根据动态条件统计营业额数据
-     */
-    Double sumByMap(Map map);
+    @Select("select ifnull(sum(amount), 0) from orders ${ew.customSqlSegment}")
+    Double sumByWrapper(@Param(Constants.WRAPPER) Wrapper<Orders> wrapper);
 }

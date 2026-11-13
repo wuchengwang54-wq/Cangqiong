@@ -1,35 +1,39 @@
 package com.sky.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.sky.entity.SetmealDish;
-import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Mapper
-public interface SetmealDishMapper {
-
-    /*
-    根据菜品Id查询套餐Id
-     */
-    List<Long> getSetmealIdByDishId(List<Long> dishId);
-
-    //批量保存套餐和菜品的关联关系
-    void insertBatch(List<SetmealDish> setmealDishes);
+public interface SetmealDishMapper extends BaseMapper<SetmealDish> {
 
     /**
-     * 根据套餐id删除套餐和菜品的关联关系
-     * @param setmealId
+     * 批量保存套餐和菜品的关联关系
      */
-    @Delete("delete from setmeal_dish where setmeal_id = #{setmealId}")
-    void deleteBySetmealId(Long setmealId);
+    @Insert({"<script>",
+            "insert into setmeal_dish (setmeal_id, dish_id, name, price, copies) values",
+            "<foreach collection='setmealDishes' item='sd' separator=','>",
+            "  (#{sd.setmealId}, #{sd.dishId}, #{sd.name}, #{sd.price}, #{sd.copies})",
+            "</foreach>",
+            "</script>"})
+    int insertBatch(@Param("setmealDishes") List<SetmealDish> setmealDishes);
 
     /**
-     * 根据套餐id查询套餐和菜品的关联关系
-     * @param setmealId
-     * @return
+     * 根据菜品id集合查询关联的套餐id
      */
-    @Select("select * from setmeal_dish where setmeal_id = #{setmealId}")
-    List<SetmealDish> getBySetmealId(Long setmealId);
+    default List<Long> getSetmealIdByDishId(List<Long> dishIds) {
+        return selectList(Wrappers.<SetmealDish>lambdaQuery()
+                        .select(SetmealDish::getSetmealId)
+                        .in(SetmealDish::getDishId, dishIds))
+                .stream()
+                .map(SetmealDish::getSetmealId)
+                .distinct()
+                .collect(Collectors.toList());
+    }
 }

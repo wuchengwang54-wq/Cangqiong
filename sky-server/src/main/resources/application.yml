@@ -24,13 +24,22 @@ spring:
     password: ${sky.redis.password}
     database: ${sky.redis.database}
 
-mybatis:
-  #mapper配置文件
-  mapper-locations: classpath:mapper/*.xml
+mybatis-plus:
+  # 实体类包，配合 @TableName / @TableId 使用
   type-aliases-package: com.sky.entity
   configuration:
-    #开启驼峰命名
+    # 开启驼峰命名
     map-underscore-to-camel-case: true
+    # 控制台打印 SQL，便于开发调试
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    # 关闭启动 banner
+    banner: false
+    # 表名、字段名默认使用下划线命名
+    table-underline: true
+    db-config:
+      # 主键默认使用数据库自增
+      id-type: auto
 
 logging:
   level:

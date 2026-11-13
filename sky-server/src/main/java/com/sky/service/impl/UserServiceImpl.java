@@ -1,6 +1,6 @@
 package com.sky.service.impl;
 
-import com.alibaba.druid.util.HttpClientUtils;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.sky.constant.MessageConstant;
@@ -15,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,24 +29,26 @@ public class UserServiceImpl implements UserService {
     private WeChatProperties weChatProperties;
     @Autowired
     private UserMapper userMapper;
-    /*
-    微信登录
+
+    /**
+     * 微信登录
      */
     @Override
     public User wxLongin(UserLoginDTO userLoginDTO) {
-       String openid = getOpenid(userLoginDTO.getCode());
+        String openid = getOpenid(userLoginDTO.getCode());
 
-        if(openid == null){
+        if (openid == null) {
             throw new LoginFailedException(MessageConstant.LOGIN_FAILED);
         }
         //判断openid是否为空，如果为空表示登录失败，抛出业务异常
-        User user = userMapper.getByOpenid(openid);
+        User user = userMapper.selectOne(
+                Wrappers.<User>lambdaQuery().eq(User::getOpenid, openid));
         //判断当前用户是否为新用户
-        if(user == null){
+        if (user == null) {
             user = User.builder()
                     .openid(openid)
-                    .createTime(LocalDateTime.now())
                     .build();
+            // create_time 由 MyBatis-Plus 自动填充
             userMapper.insert(user);
         }
         //返回这个用户对象
@@ -55,7 +56,7 @@ public class UserServiceImpl implements UserService {
     }
 
     //调用微信接口服务，获得当前微信用户的openid
-    private String getOpenid(String code){
+    private String getOpenid(String code) {
         Map<String, String> map = new HashMap<>();
         map.put("appid", weChatProperties.getAppid());
         map.put("secret", weChatProperties.getSecret());
@@ -64,7 +65,6 @@ public class UserServiceImpl implements UserService {
         String json = HttpClientUtil.doGet(WX_LOGIN, map);
 
         JSONObject jsonObject = JSON.parseObject(json);
-        String openid = jsonObject.getString("openid");
-        return openid;
+        return jsonObject.getString("openid");
     }
 }
